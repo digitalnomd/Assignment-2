@@ -88,7 +88,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 try {
 
                     //write to database here
-                    
+
 
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -115,7 +115,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         //locationManager_.requestLocationUpdates(LocationManager.GPS_PROVIDER, 10, 0, this);
 
-        locationManager_.requestLocationUpdates(LocationManager.GPS_PROVIDER, 10000, 1, new LocationListener() {
+        locationManager_.requestLocationUpdates(LocationManager.GPS_PROVIDER, 10, 0, new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
 
@@ -137,5 +137,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 // TODO Auto-generated method stub
             }
         });
+    }
 
 }
