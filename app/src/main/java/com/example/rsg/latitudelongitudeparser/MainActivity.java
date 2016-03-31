@@ -1,9 +1,10 @@
 package com.example.rsg.latitudelongitudeparser;
 
 import android.Manifest;
+import android.content.ContentValues;
 import android.content.pm.PackageManager;
-import android.hardware.Sensor;
-import android.hardware.SensorManager;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -19,12 +20,17 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private TextView longVal_, latVal_;
     private Button query_;
     private LocationManager locationManager_;
+    DBHelperClass dbhelper;
+    SQLiteDatabase database;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +53,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         query_ = (Button) findViewById(R.id.buttonQuery);
 
         query_.setOnClickListener(this);
+        dbhelper = new DBHelperClass(this); //present context
+        database = dbhelper.getWritableDatabase();
+        startLocation();
 
     }
 
@@ -77,26 +86,46 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         int id = v.getId();
         switch(id) {
             case R.id.buttonQuery:
+                Cursor temp = fetchLastLoc();
+
+                do {
+                    latVal_.setText(temp.getString(2));
+                    longVal_.setText(temp.getString(3));
+                }while(temp.moveToNext());
 
              break;
         }
     }
 
-    public Thread storeLocationData = new Thread(new Runnable() {
-        public void run() {
-            while(!Thread.currentThread().isInterrupted()) {
-                try {
+    public Cursor fetchLastLoc() {
+        //TODO modify query to select last location only
+        return database.rawQuery("SELECT * FROM location ORDER BY id DESC LIMIT 1;", null);
+        //return database.query("location", new String[]{"id","timestamp", "longitude", "latitude"}, null, null, null, null, null);
+    }
 
-                    //write to database here
 
+    private class storeLocationData extends Thread{
 
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return;
-                }
-            }
+        double longitude, latitude;
+        String timestamp;
+        public storeLocationData(double longitude, double latitude) {
+            this.longitude = longitude;
+            this.latitude = latitude;
+            Calendar c = Calendar.getInstance();
+            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss a");
+            String timestamp = sdf.format(c.getTime());
         }
-    });
+        @Override
+        public void run() {
+            ContentValues values = new ContentValues();
+            values.put("timestamp", timestamp);
+            values.put("longitude", longitude);
+            values.put("latitude", latitude);
+
+            database.insert("location", null, values);
+        }
+    }
+
 
     public void startLocation() {
 
@@ -118,6 +147,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         locationManager_.requestLocationUpdates(LocationManager.GPS_PROVIDER, 10, 0, new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
+                new storeLocationData(location.getLatitude(), location.getLongitude()).start();
 
             }
 
